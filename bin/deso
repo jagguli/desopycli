@@ -1,0 +1,29 @@
+#!/bin/env python
+"""
+Usage:
+    desocli post <CONTENT>
+    desocli repost <POSTHEX> <CONTENT>
+    desocli following
+    desocli notifications
+    desocli shell
+
+"""
+from desopycli import DesoCli
+
+from docopt import docopt
+from pprint import pprint
+
+if __name__ == "__main__":
+    opts = docopt(__doc__)
+    pprint(opts)
+    deso = DesoCli()
+    if opts["post"] is True:
+        deso.post(opts["<CONTENT>"])
+    if opts["repost"] is True:
+        deso.repost(opts["<CONTENT>"], opts["<POSTHEX>"])
+    elif opts["following"] is True:
+        deso.following()
+    elif opts["notifications"] is True:
+        deso.notifications()
+    elif opts["shell"] is True:
+        deso.shell()
