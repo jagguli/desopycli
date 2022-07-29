@@ -1,12 +1,21 @@
 #!/bin/env python
 """
-Usage:
-    desocli post <CONTENT>
-    desocli repost <POSTHEX> <CONTENT>
-    desocli following
-    desocli notifications
-    desocli shell
+DesoPy Cli
 
+Usage:
+    deso [options] post <CONTENT>
+    deso [options] repost <POSTHEX> <CONTENT>
+    deso [options] following
+    deso [options] notifications
+    deso [options] shell
+    deso [options] activity
+
+Options:
+    -h --help   Show this screen.
+    --version   Show version.
+    -A --account=<account>   `account` name to substitute in `pass` path [default: asyncmind]
+    -S --seedhex-pass-path-template=<seedhexpathtemplate>  Pass path for seedhex [default: crypto/deso/{account}/seedhex]
+    -K --key-pass-path-template=<keypathtemplate>  Pass path for deso public key [default: crypto/deso/{account}/key]
 """
 from desopycli import DesoCli
 
@@ -16,7 +25,10 @@ from pprint import pprint
 if __name__ == "__main__":
     opts = docopt(__doc__)
     pprint(opts)
-    deso = DesoCli()
+    deso = DesoCli(
+        opts["--key-pass-path-template"].format(account=opts["--account"]),
+        opts["--seedhex-pass-path-template"].format(account=opts["--account"]),
+    )
     if opts["post"] is True:
         deso.post(opts["<CONTENT>"])
     if opts["repost"] is True:
@@ -27,3 +39,5 @@ if __name__ == "__main__":
         deso.notifications()
     elif opts["shell"] is True:
         deso.shell()
+    elif opts["activity"] is True:
+        deso.activity()

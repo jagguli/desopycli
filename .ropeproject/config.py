@@ -5,6 +5,8 @@ from os.path import join, dirname
 from subprocess import check_output
 import logging
 
+logger = logging.getLogger("ropeproject")
+
 
 def set_prefs(prefs):
     """This function is called before opening the project"""

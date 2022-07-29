@@ -1,11 +1,16 @@
 from subprocess import check_output
+from random import choice
 from pprint import pprint
 from deso.Sign import hexify
 import deso
 from prompt_toolkit import prompt
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import NestedCompleter
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.shortcuts import yes_no_dialog
+
 from emoji import emojize
+from box import Box
 
 
 """SEEDHEX should always be kept private. It has access to your
@@ -19,19 +24,33 @@ Application > Storage > Local Storage >
 https://identity.bitclout.com > users > Select the public key with
 which you want to post > seedHex
 """
-SEED_HEX = (
-    check_output(["pass", "crypto/deso/asyncmind/seedhex"]).decode().strip()
-)
-PUBLIC_KEY = (
-    check_output(["pass", "crypto/deso/asyncmind/key"]).decode().strip()
-)
+
+
+def get_secret(path):
+    return check_output(["pass", path]).decode().strip()
+
+
+class PrettyPrinter:
+    def post(self, post):
+        post = Box(post)
+        print(f"""- {post.ProfileEntryResponse.Username}: {post.Body}""")
+
+    def posts(self, posts):
+        for post in posts["PostsFound"]:
+            self.post(post)
 
 
 class DesoCli:
-    def __init__(self):
+    def __init__(self, keypath, seedhexpath):
         self.desoUser = deso.User()
-        self.desoSocial = deso.Social(PUBLIC_KEY, SEED_HEX)
+        self.key = get_secret(keypath)
+        self.desoSocial = deso.Social(
+            self.key,
+            get_secret(seedhexpath),
+        )
         self.desoMetadata = deso.Metadata()
+        self.desoPosts = deso.Posts()
+        self.printer = PrettyPrinter()
         pprint(
             self.desoMetadata.getExchangeRate()
         )  # returns a response object.
@@ -44,33 +63,50 @@ class DesoCli:
         # you will use the same function to make comment and quote any post.
         content = """%s
 
-Posted via @desopycli""" % emojize(
+posted via #desopycli""" % emojize(
             content
         )
 
-        resp = self.desoSocial.submitPost(
-            content
-        ).json()  # returns a response object. add .json() in end to see complete response
-        print(resp["PostEntryResponse"]["PostHashHex"])
+        print(content)
+        if input(
+            "Send it %s?"
+            % choice(
+                ["Boss", "Cap'n", "Captain", "El Presidente", "Comrade", "Dude"]
+            )
+        ).strip().replace(" ", "").lower() in [
+            "y",
+            "yes",
+            "makeitso",
+            "aye",
+            "ayeaye",
+            "uhhuh",
+            "roger",
+            "si",
+        ]:
+            resp = self.desoSocial.submitPost(
+                content
+            ).json()  # returns a response object. add .json() in end to see complete response
+            print(resp["PostEntryResponse"]["PostHashHex"])
+        else:
+            print("Abort Abort Abort!!!")
 
     def repost(self, content, postHashHexToRepost):
         resp = self.desoSocial.repost(postHashHexToRepost).json()
         pprint(resp)
         print(resp["PostEntryResponse"]["PostHashHex"])
 
-    def following(self):
-        follower_data = self.desoUser.getFollowsStateless(
-            username="asyncmind"
-        ).json()
-        for key, follower in follower_data["PublicKeyToProfileEntry"].items():
-            import ipdb
+    def quote(self, content, postHashHexToRepost):
+        resp = self.desoSocial.repost(postHashHexToRepost).json()
+        pprint(resp)
+        print(resp["PostEntryResponse"]["PostHashHex"])
 
-            ipdb.set_trace()  ######## FIXME:REMOVE ME steven.joseph ################
-            pprint(follower["Username"])
-            messages = self.desoUser.getMessagesStateless(
-                publicKey=key, numToFetch=10
-            ).json()
-            pprint(messages)
+    def following(self):
+        results = self.desoPosts.getPostsStateless(
+            readerPublicKey=self.key,
+            numToFetch=10,
+        ).json()
+
+        self.printer.posts(results)
 
     def notifications(self):
         notifications = self.desoUser.getNotifications(
@@ -78,6 +114,21 @@ Posted via @desopycli""" % emojize(
         ).json()["Notifications"]
         for notification in notifications:
             pprint(notification)
+
+    def prompt_continuation(self, width, line_number, wrap_count):
+        """
+        The continuation: display line numbers and '->' before soft wraps.
+        Notice that we can return any kind of formatted text from here.
+        The prompt continuation doesn't have to be the same width as the prompt
+        which is displayed before the first line, but in this example we choose to
+        align them. The `width` input that we receive here represents the width of
+        the prompt.
+        """
+        if wrap_count > 0:
+            return " " * (width - 3) + "-> "
+        else:
+            text = ("- %i - " % (line_number + 1)).rjust(width)
+            return HTML("<strong>%s</strong>") % text
 
     def shell(self):
         completer = NestedCompleter.from_nested_dict(
@@ -88,8 +139,29 @@ Posted via @desopycli""" % emojize(
                     "ip": {"interface": {"brief"}},
                 },
                 "exit": None,
+                "post": None,
+                "config": {"identity": None, "account": None},
             }
         )
 
-        text = prompt("# ", completer=completer, complete_while_typing=True)
-        print("You said: %s" % text)
+        text = prompt(
+            "# ",
+            completer=completer,
+            complete_while_typing=True,
+        )
+        if text.strip() == "post":
+            text = prompt(
+                "# ",
+                completer=completer,
+                complete_while_typing=True,
+                multiline=True,
+                prompt_continuation=self.prompt_continuation,
+            )
+        print("Post? %s" % text)
+        result = yes_no_dialog(
+            title="Yes/No dialog example", text="Do you want to post to %s?"
+        ).run()
+
+        print(f"Result = {result}")
+        if result is True:
+            deso.post(text)
