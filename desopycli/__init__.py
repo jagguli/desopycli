@@ -11,6 +11,7 @@ from prompt_toolkit.shortcuts import yes_no_dialog
 
 from emoji import emojize
 from box import Box
+from spellchecker import SpellChecker
 
 
 """SEEDHEX should always be kept private. It has access to your
@@ -57,6 +58,7 @@ class DesoCli:
         pprint(
             self.desoMetadata.getDiamondLevelMap()
         )  # getDiamondLevelMap takes optional inDesoNanos argument which is by default True.
+        self.spell = SpellChecker()
 
     def post(self, content):
         # submitPost() takes many optional argument like imageURLs, videoURLs, postExtraData etc.
@@ -68,6 +70,16 @@ posted via #desopycli""" % emojize(
         )
 
         print(content)
+        print("")
+        misspelled = self.spell.unknown(content.split())
+        if misspelled:
+            print("Spell check speil:")
+            for word in misspelled:
+                # Get the one `most likely` answer
+                print("wot? %s" % self.spell.correction(word))
+
+                # Get a list of `likely` options
+                print("maybe this? %s" % self.spell.candidates(word))
         if input(
             "Send it %s?"
             % choice(
@@ -76,11 +88,13 @@ posted via #desopycli""" % emojize(
         ).strip().replace(" ", "").lower() in [
             "y",
             "yes",
+            "yep",
+            "yay",
             "makeitso",
             "aye",
             "ayeaye",
             "uhhuh",
-            "roger",
+            "rogerroger",
             "si",
         ]:
             resp = self.desoSocial.submitPost(

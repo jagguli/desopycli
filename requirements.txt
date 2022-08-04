@@ -2,3 +2,4 @@ docopt
 deso
 emoji
 python-box
+pyspellchecker
