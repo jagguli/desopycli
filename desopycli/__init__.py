@@ -12,7 +12,12 @@ from prompt_toolkit.shortcuts import yes_no_dialog
 from emoji import emojize
 from box import Box
 from spellchecker import SpellChecker
+import logging
 
+logger = logging.getLogger(__name__)
+
+__VERSION__ = "1.0.0"
+SPELLING_EXCLUSIONS = ["desopycli"]
 
 """SEEDHEX should always be kept private. It has access to your
 complete wallet. It's kinda like seed phrase. This is why writing
@@ -41,6 +46,11 @@ class PrettyPrinter:
             self.post(post)
 
 
+class SpellFilter:
+    def filter():
+        pass  # TODO
+
+
 class DesoCli:
     def __init__(self, keypath, seedhexpath):
         self.desoUser = deso.User()
@@ -52,22 +62,18 @@ class DesoCli:
         self.desoMetadata = deso.Metadata()
         self.desoPosts = deso.Posts()
         self.printer = PrettyPrinter()
-        pprint(
-            self.desoMetadata.getExchangeRate()
+        logger.debug(
+            "Exchange Rates %s", self.desoMetadata.getExchangeRate()
         )  # returns a response object.
-        pprint(
-            self.desoMetadata.getDiamondLevelMap()
+        logger.debug(
+            "Diamond Levels %s", self.desoMetadata.getDiamondLevelMap()
         )  # getDiamondLevelMap takes optional inDesoNanos argument which is by default True.
         self.spell = SpellChecker()
 
     def post(self, content):
         # submitPost() takes many optional argument like imageURLs, videoURLs, postExtraData etc.
         # you will use the same function to make comment and quote any post.
-        content = """%s
-
-posted via #desopycli""" % emojize(
-            content
-        )
+        content = emojize(content)
 
         print(content)
         print("")
@@ -75,6 +81,8 @@ posted via #desopycli""" % emojize(
         if misspelled:
             print("Spell check speil:")
             for word in misspelled:
+                if word in SPELLING_EXCLUSIONS or word[0] in ["@", "#"]:
+                    continue
                 # Get the one `most likely` answer
                 print("wot? %s" % self.spell.correction(word))
 
