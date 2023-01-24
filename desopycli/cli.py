@@ -4,8 +4,9 @@
 DesoPy Cli
 
 Usage:
-    deso [options] post <CONTENT>
-    deso [options] repost <POSTHEX> <CONTENT>
+    deso [options] post <CONTENT> [<ATTACHMENT_PATH>]
+    deso [options] repost <POSTHEX>
+    deso [options] quote <POSTHEX> <CONTENT>
     deso [options] following
     deso [options] notifications
     deso [options] shell
@@ -62,7 +63,7 @@ logging.config.dictConfig(log_dict)
 logger = logging.getLogger(__name__)
 
 
-if __name__ == "__main__":
+def main():
     opts = docopt(__doc__)
     logger.debug(opts)
     deso = DesoCli(
@@ -70,9 +71,11 @@ if __name__ == "__main__":
         opts["--seedhex-pass-path-template"].format(account=opts["--account"]),
     )
     if opts["post"] is True:
-        deso.post(opts["<CONTENT>"])
+        deso.post(opts["<CONTENT>"], opts["<ATTACHMENT_PATH>"])
     if opts["repost"] is True:
-        deso.repost(opts["<CONTENT>"], opts["<POSTHEX>"])
+        deso.repost(opts["<POSTHEX>"])
+    if opts["quote"] is True:
+        deso.quote(opts["<CONTENT>"], opts["<POSTHEX>"])
     elif opts["following"] is True:
         deso.following()
     elif opts["notifications"] is True:
