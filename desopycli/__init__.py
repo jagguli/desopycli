@@ -1,6 +1,7 @@
+from os.path import basename
 from subprocess import check_output
 from random import choice
-from pprint import pprint
+from pprint import pprint, pformat
 from deso.Sign import hexify
 import deso
 from prompt_toolkit import prompt
@@ -10,6 +11,7 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import yes_no_dialog
 
 from emoji import emojize
+import pyemoji
 from box import Box
 from spellchecker import SpellChecker
 import logging
@@ -70,13 +72,21 @@ class DesoCli:
         )  # getDiamondLevelMap takes optional inDesoNanos argument which is by default True.
         self.spell = SpellChecker()
 
-    def post(self, content):
-        # submitPost() takes many optional argument like imageURLs, videoURLs, postExtraData etc.
-        # you will use the same function to make comment and quote any post.
-        content = emojize(content)
+    def emojize(self, content):
+        return content
+        entity = False
+        emo = emojize(
+            content.replace(":smiling:", ":relaxed:"), language="alias"
+        )
+        return pyemoji.entities(emo) if entity else emo
+
+    def prepare_content(self, content):
+        content = self.emojize(content)
 
         print(content)
-        print("")
+        print(f"{len(content)} chars")
+        if len(content) >> 300:
+            print("greater than 300 chars")
         misspelled = self.spell.unknown(content.split())
         if misspelled:
             print("Spell check speil:")
@@ -88,6 +98,39 @@ class DesoCli:
 
                 # Get a list of `likely` options
                 print("maybe this? %s" % self.spell.candidates(word))
+        return content
+
+    def process_attachment(self, attachment_path):
+        imageURLs = []
+        videoURLs = []
+        if attachment_path:
+            if "spotify" in attachment_path:
+                videoURLs.append(attachment_path)
+            elif "youtu" in attachment_path:
+                videoURLs.append(attachment_path)
+            elif attachment_path.endswith("jpg"):
+                desoMedia = deso.Media(PUBLIC_KEY, SEED_HEX)
+                imageFileList = [
+                    (
+                        "file",
+                        (
+                            basename(attachment_path),
+                            open(attachment_path, "rb"),
+                            "image/png",
+                        ),
+                    )
+                ]  # 'img.png' is the image we are uploading to images.bitclout.com
+                urlResponse = desoMedia.uploadImage(imageFileList)
+                print(urlResponse.json())
+        return dict(
+            imageURLs=imageURLs,
+            videoURLs=videoURLs,
+        )
+
+    def post(self, content, attachment_path=""):
+        # submitPost() takes many optional argument like imageURLs, videoURLs, postExtraData etc.
+        # you will use the same function to make comment and quote any post.
+        content = self.prepare_content(content)
         if input(
             "Send it %s?"
             % choice(
@@ -106,20 +149,23 @@ class DesoCli:
             "si",
         ]:
             resp = self.desoSocial.submitPost(
-                content
+                content, **self.process_attachment(attachment_path)
             ).json()  # returns a response object. add .json() in end to see complete response
             print(resp["PostEntryResponse"]["PostHashHex"])
         else:
             print("Abort Abort Abort!!!")
 
-    def repost(self, content, postHashHexToRepost):
+    def repost(self, postHashHexToRepost):
         resp = self.desoSocial.repost(postHashHexToRepost).json()
         pprint(resp)
         print(resp["PostEntryResponse"]["PostHashHex"])
 
-    def quote(self, content, postHashHexToRepost):
-        resp = self.desoSocial.repost(postHashHexToRepost).json()
-        pprint(resp)
+    def quote(self, content, postHashHexToQuote):
+        content = self.emojize(content)
+        resp = self.desoSocial.quote(
+            body=content, postHashHexToQuote=postHashHexToQuote
+        ).json()
+        logger.debug(pformat(resp))
         print(resp["PostEntryResponse"]["PostHashHex"])
 
     def following(self):
