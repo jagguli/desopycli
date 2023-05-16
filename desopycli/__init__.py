@@ -151,7 +151,10 @@ class DesoCli:
             resp = self.desoSocial.submitPost(
                 content, **self.process_attachment(attachment_path)
             ).json()  # returns a response object. add .json() in end to see complete response
-            print(resp["PostEntryResponse"]["PostHashHex"])
+            try:
+                print(resp["PostEntryResponse"]["PostHashHex"])
+            except KeyError:
+                logger.exception(f"Got error response! {resp}")
         else:
             print("Abort Abort Abort!!!")
 

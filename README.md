@@ -1,3 +1,3 @@
-Simple Deso Cli Using DeSo.py 
+# Simple Deso Cli Using DeSo.py 
 
-# TODO embedd spotify and yt links
+- TODO embedd spotify and yt links

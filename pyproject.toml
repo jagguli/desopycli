@@ -1,5 +1,5 @@
 [project]
-    name="DeSoPyCLI"
+name="DeSoPyCLI"
 version = "0.0.1"
 authors = [
   { name="Steven Joseph", email="stevenjose@gmail.com" },
