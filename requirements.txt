@@ -1,4 +1,5 @@
 docopt
+arweave-python-client
 deso
 emoji
 python-box

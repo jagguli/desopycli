@@ -22,7 +22,6 @@ Options:
 
 
 """
-from desopycli import DesoCli, __VERSION__
 import logging
 import logging.config
 
@@ -39,7 +38,7 @@ log_dict = {
     },
     "handlers": {
         "default": {
-            "level": "INFO",
+            "level": "DEBUG",
             "formatter": "standard",
             "class": "logging.StreamHandler",
         },
@@ -61,6 +60,8 @@ log_dict = {
 logging.config.dictConfig(log_dict)
 
 logger = logging.getLogger(__name__)
+
+from desopycli import DesoCli, __VERSION__
 
 
 def main():
